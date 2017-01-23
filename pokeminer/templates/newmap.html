@@ -45,6 +45,28 @@
         .leaflet-control-layers-toggle {
             background-image: url({{ url_for('static', filename='img/layers.png') }});
         }
+		#basemaps-wrapper {
+    position: absolute;
+    top: 170px;
+    right: 10px;
+    z-index: 500;
+    background: rgba(255, 255, 255, 0.51);
+    padding: 10px;
+  }
+  #basemaps {
+    margin-bottom: 5px;
+  }
+  #basemaps-wrapper {
+    position: absolute;
+    top: 170px;
+    right: 10px;
+    z-index: 500;
+    background: rgba(255, 255, 255, 0.51);
+    padding: 10px;
+  }
+  #basemaps {
+    margin-bottom: 5px;
+  }	    
     </style>
 </head>
 <body>
@@ -56,7 +78,51 @@
 
     <script src="{{ url_for('static', filename='js/jquery-3.1.1.min.js') }}"></script>
     <script src="{{ url_for('static', filename='js/leaflet.js') }}"></script>
+    <div id="map"></div>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/map.css') }}">
+    <script src="{{ url_for('static', filename='js/map.js') }}"></script>	
+    <script src="{{ url_for('static', filename='js/index.js') }}"></script>	
+    <div id="basemaps-wrapper" class="leaflet-bar">
+    <select name="basemaps" id="basemaps" onChange="changeBasemap(basemaps)">
+    <option value="Topographic">Day Map</option>
+    <option value="Streets">Street Map</option>
+    <option value="Gray">Gray Map</option>
+    <option value="DarkGray">Dark Map</option>
+    <option value="Imagery">Satellite Map</option>
+  </select>
+</div>
     <script>
+	var map = L.map('map').setView([-33.87, 150.77], 10);
+  var layer = L.esri.basemapLayer('Topographic').addTo(map);
+  var layerLabels;
+
+  function setBasemap(basemap) {
+    if (layer) {
+      map.removeLayer(layer);
+    }
+
+    layer = L.esri.basemapLayer(basemap);
+
+    map.addLayer(layer);
+
+    if (layerLabels) {
+      map.removeLayer(layerLabels);
+    }
+
+    if (basemap === 'Gray'
+     || basemap === 'DarkGray'
+     || basemap === 'Imagery'
+     || basemap === 'Terrain'
+   ) {
+      layerLabels = L.esri.basemapLayer(basemap + 'Labels');
+      map.addLayer(layerLabels);
+    }
+  }
+
+  function changeBasemap(basemaps){
+    var basemap = basemaps.value;
+    setBasemap(basemap);
+  }
         var PokemonIcon = L.Icon.extend({
             options: {
                 iconSize: [30, 30],
@@ -81,7 +147,7 @@
             options: {
                 iconSize: [35, 35],
                 className: 'notification-icon',
-                iconUrl: '{{ url_for("static", filename="img/masterball.png") }}'
+                 iconUrl: '{{ url_for("static", filename="img/masterball.png") }}'
             }
         });
         var PokestopIcon = L.Icon.extend({
@@ -91,7 +157,6 @@
                 iconUrl: '{{ url_for("static", filename="img/pokestop.png") }}'
             }
         });
-
         function getMarkers () {
             return new Promise(function (resolve, reject) {
                 $.get('/data', function (response) {
@@ -110,13 +175,12 @@
             Spawns: L.layerGroup([]),
             ScanArea: L.layerGroup([])
         };
-
         function getPopupContent (item) {
             var diff = (item.expires_at - new Date().getTime() / 1000);
             var minutes = parseInt(diff / 60);
             var seconds = parseInt(diff - (minutes * 60));
             var expires_at = minutes + 'm ' + seconds + 's';
-            return '<b>#' + item.pokemon_id + ' ' + item.name + '</b> ' + expires_at;
+           return '<b>Pokemon : #'+ item.pokemon_id + ' / ' + item.name + '<p>Location : ' + item.lat + ',' + item.lon + '</p><p><a href=https://www.google.com/maps/dir/'+ item.lat + ','+ item.lon +' target="_blank" title="Maps">Get directions</p></a><p>Disappears In : </b>' + expires_at ;
         }
 
         function getOpacity (item) {
@@ -166,18 +230,25 @@
             var marker = L.marker([raw.lat, raw.lon], {icon: icon, opacity: 1});
             marker.raw = raw;
             markers[raw.id] = marker;
-            marker.on('popupopen',function popupopen (event) {
-                var pokemonName;
+           marker.on('popupopen',function popupopen (event) {
+                 var pokemonName;
                 if (raw.team === 0) {
                     event.popup.setContent('An empty Gym!');
-                } else {
-                    event.popup.setContent('Prestige: <b>' + raw.prestige + '</b><br>Guarding Pokemon:<br><b>' + '#' + raw.pokemon_id + ' ' + raw.pokemon_name + '</b>');
+                } else if 
+                 (raw.team === 1 ) {
+                    event.popup.setContent('Team Mystic<p>Prestige :' + raw.prestige + '</p></b><br>Guarding Pokemon :<br><b>#' + raw.pokemon_id + ' / ' + raw.pokemon_name + '</b><p>Location :' + raw.lat + ',' + raw.lon + '</p><p><a href=https://www.google.com/maps/dir/'+ raw.lat + ','+ raw.lon +' target="_blank" title="Maps">Get directions</p></b>');
+                } else if 
+                (raw.team === 2 ) {
+                    event.popup.setContent('Team Valor<p>Prestige :' + raw.prestige + '</p></b><br>Guarding Pokemon :<br><b>#' + raw.pokemon_id + ' / ' + raw.pokemon_name + '</b><p>Location :' + raw.lat + ',' + raw.lon + '</p><p><a href=https://www.google.com/maps/dir/'+ raw.lat + ','+ raw.lon +' target="_blank" title="Maps">Get directions</p></b>');
+                } else if 
+                (raw.team === 3 ) {
+                    event.popup.setContent('Team Instinct<p>Prestige :' + raw.prestige + '</p></b><br>Guarding Pokemon :<br><b>#' + raw.pokemon_id + ' / ' + raw.pokemon_name + '</b><p>Location :' + raw.lat + ',' + raw.lon + '</p><p><a href=https://www.google.com/maps/dir/'+ raw.lat + ','+ raw.lon +' target="_blank" title="Maps">Get directions</p></b>');
                 }
             });
-            marker.bindPopup();
+	     marker.bindPopup();
             return marker;
-        }
-
+        }	
+     
         function WorkerMarker (raw) {
             if (raw.sent_notification === true) {
                 var icon = new NotificationIcon();
@@ -233,7 +304,7 @@
                     var icon = new PokestopIcon();
                     var marker = L.marker([item.lat, item.lon], {icon: icon});
                     marker.raw = item;
-                    marker.bindPopup('<b>Pokestop ' + item.external_id + '</b>');
+                    marker.bindPopup('<b>Pokestop: <p><p>Location : ' + item.lat + ',' + item.lon + '</p><p><a href=https://www.google.com/maps/dir/'+ item.lat + ','+ item.lon +' target="_blank" title="Maps">Get directions</p></b>');	
                     marker.addTo(overlays.Pokestops);
                 } else if (item.type === 'spawn') {
                     var circle = L.circle([item.lat, item.lon], 5, {weight: 2});
@@ -243,7 +314,7 @@
                         time = item.despawn_time;
                     }
                     else {
-                        circle.setStyle({color: '#f03'})
+                      circle.setStyle({color: '#f03'})
                     }
                     popup += time + '<br/>duration: ';
                     popup += item.duration == null ? '30mn' : item.duration + 'mn';
